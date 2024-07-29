@@ -7,3 +7,9 @@ Progres server
 </h1>
 
 Submit:
+
+<form action="" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" value="Submit">
+</form>
