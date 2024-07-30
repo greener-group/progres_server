@@ -1,9 +1,37 @@
-{% load static %}
+{% extends "progres_search/base.html" %}
 
-<link rel="stylesheet" href="{% static 'progres_search/style.css' %}">
+{% block title %}Progres results{% endblock %}
+
+{% block content %}
 
 <h1>
 Progres results
 </h1>
 
-Job name: {{ submission.job_name }}
+<ul>
+    <li>Job name: {{ submission.job_name }}</li>
+    <li>Query size: {{ submission.n_residues }} residues</li>
+    <li>Database: {{ targetdb }}</li>
+    <li>Parameters: minsimilarity {{ minsimilarity }}, maxhits {{ maxhits }}</li>
+</ul>
+
+<table>
+    <tr>
+        <th>Hit n</th>
+        <th>Domain</th>
+        <th>Hit nres</th>
+        <th>Similarity</th>
+        <th>Notes</th>
+    </tr>
+    {% for domain, hit_nres, similarity, note in results %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ domain }}</td>
+            <td>{{ hit_nres }}</td>
+            <td>{{ similarity }}</td>
+            <td>{{ note }}</td>
+        </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

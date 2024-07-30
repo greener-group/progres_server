@@ -1,15 +1,19 @@
-{% load static %}
+{% extends "progres_search/base.html" %}
 
-<link rel="stylesheet" href="{% static 'progres_search/style.css' %}">
+{% block title %}Progres server{% endblock %}
+
+{% block content %}
 
 <h1>
 Progres server
 </h1>
 
-Submit:
+<p class="hello">Submit:</p>
 
 <form action="" method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {{ form }}
     <input type="submit" value="Submit">
 </form>
+
+{% endblock %}
