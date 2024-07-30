@@ -6,7 +6,9 @@ import faiss
 import progres as pg
 import torch
 from torch_geometric.loader import DataLoader
+import importlib.metadata
 import os
+from tempfile import NamedTemporaryFile
 
 from .models import Submission
 from .forms import SubmitJobForm
@@ -23,28 +25,25 @@ for targetdb in pg.pre_embedded_dbs_faiss:
 
 print("Loaded Progres data")
 
-def read_pdb_coords(f):
-    s = f.read().decode("utf-8")
-    coords = []
-    for line in s.split("\n"):
-        if (line.startswith("ATOM  ") or line.startswith("HETATM")) and line[12:16].strip() == "CA":
-            coords.append([float(line[30:38]), float(line[38:46]), float(line[46:54])])
-        elif line.startswith("ENDMDL"):
-            break
-    return coords
-
 def index(request):
     if request.method == "POST":
         form = SubmitJobForm(request.POST, request.FILES)
         if form.is_valid():
-            coords = read_pdb_coords(request.FILES["file"])
+            fileformat = form.cleaned_data["fileformat"]
+            # Keep the file name ending to allow the file format to be guessed
+            temp_file = NamedTemporaryFile(suffix=("." + request.FILES["file"].name))
+            with open(temp_file.name, "wb+") as destination:
+                for chunk in request.FILES["file"].chunks():
+                    destination.write(chunk)
+            coords = pg.read_coords(temp_file.name, fileformat)
+            temp_file.close()
             embedding = pg.embed_coords(coords, model=pg_model)
             submission = Submission(
                 job_name=form.cleaned_data["job_name"],
                 n_residues=len(coords),
                 embedding=embedding.tolist(),
                 targetdb=form.cleaned_data["targetdb"],
-                fileformat=form.cleaned_data["fileformat"],
+                fileformat=fileformat,
                 minsimilarity=form.cleaned_data["minsimilarity"],
                 maxhits=form.cleaned_data["maxhits"],
                 submission_time=timezone.now(),
@@ -57,19 +56,20 @@ def index(request):
 
 def results(request, submission_id):
     submission = get_object_or_404(Submission, pk=submission_id)
+    targetdb = submission.targetdb
     data_loader = DataLoader(
         pg.EmbeddingDataset(torch.tensor(submission.embedding)),
         batch_size=1,
         shuffle=False,
         num_workers=0,
     )
-    search_type = "faiss" if submission.targetdb in pg.pre_embedded_dbs_faiss else "torch"
+    search_type = "faiss" if targetdb in pg.pre_embedded_dbs_faiss else "torch"
     result_dict = list(pg.search_generator_inner(
         data_loader,
         ["?"],
-        submission.targetdb,
-        target_data_dict[submission.targetdb],
-        target_index_dict[submission.targetdb] if search_type == "faiss" else None,
+        targetdb,
+        target_data_dict[targetdb],
+        target_index_dict[targetdb] if search_type == "faiss" else None,
         search_type,
         submission.minsimilarity,
         submission.maxhits,
@@ -77,7 +77,9 @@ def results(request, submission_id):
     results_zip = zip(result_dict["domains"], result_dict["hits_nres"],
                       result_dict["similarities"], result_dict["notes"])
     context = {
-        "submission"   : submission,
-        "results"      : results_zip,
+        "submission"     : submission,
+        "results"        : results_zip,
+        "progres_version": importlib.metadata.version("progres"),
+        "faiss_str"      : ", FAISS search" if search_type == "faiss" else "",
     }
     return render(request, "progres_search/results.html", context)
