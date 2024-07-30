@@ -4,6 +4,8 @@
 
 {% block content %}
 
+<a href="{% url 'progres_search:index' %}">Home</a>
+
 <h1>
 Progres results
 </h1>
@@ -11,8 +13,8 @@ Progres results
 <ul>
     <li>Job name: {{ submission.job_name }}</li>
     <li>Query size: {{ submission.n_residues }} residues</li>
-    <li>Database: {{ targetdb }}</li>
-    <li>Parameters: minsimilarity {{ minsimilarity }}, maxhits {{ maxhits }}</li>
+    <li>Database: {{ submission.targetdb }}</li>
+    <li>Parameters: minsimilarity {{ submission.minsimilarity }}, maxhits {{ submission.maxhits }}</li>
 </ul>
 
 <table>

@@ -1,5 +1,10 @@
 from django import forms
 
-class UploadFileForm(forms.Form):
-    job_name = forms.CharField(max_length=200)
+from .models import Submission
+
+class SubmitJobForm(forms.ModelForm):
     file = forms.FileField()
+
+    class Meta:
+        model = Submission
+        fields = ["job_name", "targetdb", "fileformat", "minsimilarity", "maxhits"]
