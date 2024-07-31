@@ -6,6 +6,11 @@
     width: 40%;
     float: left;
 }
+#viewer_query {
+    position: relative;
+    height: 400px;
+    width: 400px;
+}
 #viewer_target {
     position: relative;
     height: 400px;

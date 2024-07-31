@@ -7,35 +7,6 @@
 <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-<script>
-    function view_structure(url, res_range, hit_n) {
-        let element = $("#viewer_target");
-        let config = {backgroundColor: "white"};
-        let viewer = $3Dmol.createViewer(element, config);
-        let resrange_list = res_range.split("_");
-        jQuery.ajax(url, {
-            success: function(data) {
-                viewer.addModel(data, "pdb");
-                viewer.setStyle({}, {cartoon: {color: "grey", opacity: 0.8}});
-                for (var i = 0; i < resrange_list.length; i++) {
-                    viewer.setStyle(
-                        {resi: resrange_list[i]},
-                        {cartoon: {color: "red"}},
-                    );
-                }
-                viewer.zoomTo();
-                viewer.render();
-                $("#hit_info_n").html(hit_n)
-                $("#hit_info_url").html("<a href='" + url + "'>" + url + "</a>")
-                $("#hit_info_res").html(res_range)
-            },
-            error: function(hdr, status, err) {
-                console.error("Failed to load PDB " + url + ": " + err);
-            },
-        });
-    };
-</script>
-
 <a href="{% url 'progres_search:index' %}">
     Home
 </a>
@@ -79,9 +50,15 @@
 </div>
 
 <div id="results_right">
-    <h2>
+    <h3>
+        Query structure
+    </h3>
+
+    <div id="viewer_query"></div>
+
+    <h3>
         Selected hit structure
-    </h2>
+    </h3>
 
     <div id="viewer_target"></div>
 
@@ -91,5 +68,45 @@
         <li>Residue range: <span id="hit_info_res"></span></li>
     </ul>
 </div>
+
+<script>
+    let element = $("#viewer_query");
+    let config = {backgroundColor: "white"};
+    let viewer_query = $3Dmol.createViewer(element, config);
+    let query_pdb = `{{ query_pdb }}`;
+    viewer_query.addModel(query_pdb, "pdb");
+    viewer_query.setStyle({}, {cartoon: {color: "blue"}});
+    viewer_query.zoomTo();
+    viewer_query.render();
+    console.log(query_pdb);
+
+    function view_structure(url, res_range, hit_n) {
+        let element = $("#viewer_target");
+        let config = {backgroundColor: "white"};
+        let viewer_target = $3Dmol.createViewer(element, config);
+        let resrange_list = res_range.split("_");
+
+        jQuery.ajax(url, {
+            success: function(target_pdb) {
+                viewer_target.addModel(target_pdb, "pdb");
+                viewer_target.setStyle({}, {cartoon: {color: "grey", opacity: 0.8}});
+                for (var i = 0; i < resrange_list.length; i++) {
+                    viewer_target.setStyle(
+                        {resi: resrange_list[i]},
+                        {cartoon: {color: "red"}},
+                    );
+                }
+                viewer_target.zoomTo();
+                viewer_target.render();
+                $("#hit_info_n").html(hit_n)
+                $("#hit_info_url").html("<a href='" + url + "'>" + url + "</a>")
+                $("#hit_info_res").html(res_range)
+            },
+            error: function(hdr, status, err) {
+                console.error("Failed to load PDB " + url + ": " + err);
+            },
+        });
+    };
+</script>
 
 {% endblock %}

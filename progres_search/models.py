@@ -4,10 +4,11 @@ import progres as pg
 
 class Submission(models.Model):
     targetdbs   = [(x, x) for x in pg.pre_embedded_dbs_faiss + pg.pre_embedded_dbs]
-    fileformats = [(x, x) for x in ["guess", "pdb", "mmcif", "mmtf", "coords"]]
+    fileformats = [(x, x) for x in ["guess", "pdb", "mmcif", "mmtf"]]
 
     job_name = models.CharField(max_length=200, blank=True)
     n_residues = models.IntegerField()
+    coords_backbone = models.JSONField()
     embedding = models.JSONField()
     targetdb = models.CharField(
         max_length=20,
