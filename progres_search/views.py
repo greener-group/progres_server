@@ -13,6 +13,8 @@ from tempfile import NamedTemporaryFile
 from .models import Submission
 from .forms import SubmitJobForm
 
+print("Loading Progres data will take a minute")
+
 pg_model = pg.load_trained_model()
 target_data_dict = {}
 for targetdb in (pg.pre_embedded_dbs_faiss + pg.pre_embedded_dbs):
@@ -54,6 +56,17 @@ def index(request):
         form = SubmitJobForm()
     return render(request, "progres_search/index.html", {"form": form})
 
+def get_target_url(note, targetdb):
+    if targetdb == "afted":
+        afdb_id = note.split()[0]
+        return f"https://alphafold.ebi.ac.uk/files/{afdb_id}-model_v4.pdb"
+    return ""
+
+def get_res_range(note, targetdb):
+    if targetdb == "afted":
+        return note.split()[1]
+    return ""
+
 def results(request, submission_id):
     submission = get_object_or_404(Submission, pk=submission_id)
     targetdb = submission.targetdb
@@ -74,8 +87,11 @@ def results(request, submission_id):
         submission.minsimilarity,
         submission.maxhits,
     ))[0]
+    target_urls = [get_target_url(note, targetdb) for note in result_dict["notes"]]
+    res_ranges = [get_res_range(note, targetdb) for note in result_dict["notes"]]
     results_zip = zip(result_dict["domains"], result_dict["hits_nres"],
-                      result_dict["similarities"], result_dict["notes"])
+                      result_dict["similarities"], result_dict["notes"],
+                      target_urls, res_ranges)
     context = {
         "submission"     : submission,
         "results"        : results_zip,
