@@ -7,4 +7,5 @@ class SubmitJobForm(forms.ModelForm):
 
     class Meta:
         model = Submission
-        fields = ["job_name", "targetdb", "fileformat", "minsimilarity", "maxhits"]
+        fields = ["job_name", "targetdb", "fileformat", "minsimilarity",
+                  "maxhits", "chainsaw"]

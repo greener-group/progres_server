@@ -18,46 +18,57 @@
 <div id="results_left">
     <ul>
         <li>Job name: {{ submission.job_name }}</li>
-        <li>Query size: {{ submission.n_residues }} residues</li>
+        <li>Query size: {{ submission.n_res_total }} residues</li>
+        <li>n domains: {{ n_domains }}</li>
         <li>Database: {{ submission.targetdb }}</li>
-        <li>Parameters: minsimilarity {{ submission.minsimilarity }}, maxhits {{ submission.maxhits }}, progres v{{ progres_version }}{{ faiss_str }}</li>
+        <li>Parameters: minsimilarity {{ submission.minsimilarity }}, maxhits {{ submission.maxhits }}, chainsaw {{ chainsaw_str }}, faiss {{ faiss_str }}, progres v{{ progres_version }}</li>
     </ul>
 
-    <table>
-        <tr>
-            <th>Hit n</th>
-            <th>Domain</th>
-            <th>Hit nres</th>
-            <th>Similarity</th>
-            <th>Notes</th>
-            <th>View</th>
-        </tr>
-        {% for domain, hit_nres, similarity, note, url, res_range in results %}
+    {% for domain_n, domain_size, domain_res_range, results in domains_zip %}
+        <h3>
+            Domain {{ domain_n }}
+        </h3>
+
+        <ul>
+            <li>Domain size: {{ domain_size }} residues ({{ domain_res_range }})</li>
+        </ul>
+
+        <table>
             <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ domain }}</td>
-                <td>{{ hit_nres }}</td>
-                <td>{{ similarity }}</td>
-                <td>{{ note }}</td>
-                <td>
-                    <button onclick="view_structure('{{ url }}', '{{ res_range }}', '{{ forloop.counter }}');">
-                        View
-                    </button>
-                </td>
+                <th>Hit n</th>
+                <th>Domain</th>
+                <th>Hit nres</th>
+                <th>Similarity</th>
+                <th>Notes</th>
+                <th>View</th>
             </tr>
-        {% endfor %}
-    </table>
+            {% for domain, hit_nres, similarity, note, url, res_range in results %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ domain }}</td>
+                    <td>{{ hit_nres }}</td>
+                    <td>{{ similarity }}</td>
+                    <td>{{ note }}</td>
+                    <td>
+                        <button onclick="view_structure('{{ url }}', '{{ res_range }}', {{ domain_n }}, {{ forloop.counter }});">
+                            View
+                        </button>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endfor %}
 </div>
 
 <div id="results_right">
-    <h3>
-        Query structure
+    <h3 id="query_info">
+        Query domain
     </h3>
 
     <div id="viewer_query"></div>
 
     <h3>
-        Selected hit structure
+        Selected hit domain
     </h3>
 
     <div id="viewer_target"></div>
@@ -70,24 +81,26 @@
 </div>
 
 <script>
-    let element = $("#viewer_query");
-    let config = {backgroundColor: "white"};
-    let viewer_query = $3Dmol.createViewer(element, config);
-    let query_pdb = `{{ query_pdb }}`;
-    viewer_query.addModel(query_pdb, "pdb");
-    viewer_query.setStyle({}, {cartoon: {color: "blue"}});
-    viewer_query.zoomTo();
-    viewer_query.render();
-    console.log(query_pdb);
-
-    function view_structure(url, res_range, hit_n) {
-        let element = $("#viewer_target");
+    function view_structure(url, res_range, domain_n, hit_n) {
+        let element_query = $("#viewer_query");
+        let element_target = $("#viewer_target");
         let config = {backgroundColor: "white"};
-        let viewer_target = $3Dmol.createViewer(element, config);
+        let viewer_query = $3Dmol.createViewer(element_query, config);
+        let viewer_target = $3Dmol.createViewer(element_target, config);
+        let query_pdbs = [
+            {% for query_pdb in query_pdbs %}
+                `{{ query_pdb }}`,
+            {% endfor %}
+        ];
         let resrange_list = res_range.split("_");
 
         jQuery.ajax(url, {
             success: function(target_pdb) {
+                viewer_query.addModel(query_pdbs[domain_n - 1], "pdb");
+                viewer_query.setStyle({}, {cartoon: {color: "blue"}});
+                viewer_query.zoomTo();
+                viewer_query.render();
+
                 viewer_target.addModel(target_pdb, "pdb");
                 viewer_target.setStyle({}, {cartoon: {color: "grey", opacity: 0.8}});
                 for (var i = 0; i < resrange_list.length; i++) {
@@ -98,6 +111,7 @@
                 }
                 viewer_target.zoomTo();
                 viewer_target.render();
+                $("#query_info").html("Query domain " + domain_n)
                 $("#hit_info_n").html(hit_n)
                 $("#hit_info_url").html("<a href='" + url + "'>" + url + "</a>")
                 $("#hit_info_res").html(res_range)
@@ -107,6 +121,10 @@
             },
         });
     };
+
+    document.addEventListener("DOMContentLoaded", function() {
+        view_structure('{{ url_start }}', '{{ res_range_start }}', 1, 1);
+    });
 </script>
 
 {% endblock %}

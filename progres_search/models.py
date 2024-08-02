@@ -7,9 +7,10 @@ class Submission(models.Model):
     fileformats = [(x, x) for x in ["guess", "pdb", "mmcif", "mmtf"]]
 
     job_name = models.CharField(max_length=200, blank=True)
-    n_residues = models.IntegerField()
-    coords_backbone = models.JSONField()
-    embedding = models.JSONField()
+    n_res_total = models.IntegerField()
+    res_ranges = models.CharField(max_length=200)
+    dom_coords_bb = models.JSONField()
+    embeddings = models.JSONField()
     targetdb = models.CharField(
         max_length=20,
         choices=targetdbs,
@@ -33,6 +34,7 @@ class Submission(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(1000)],
         verbose_name="Max number of hits",
     )
+    chainsaw = models.BooleanField(default=False, verbose_name="Split domains")
     submission_time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
