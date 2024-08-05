@@ -214,6 +214,7 @@ def results(request, submission_id):
         "submission"     : submission,
         "query_pdbs"     : query_pdbs,
         "n_domains"      : len(results_zips),
+        "domains_iter"   : range(1, len(results_zips) + 1),
         "domains_zip"    : domains_zip,
         "url_start"      : get_target_url(result_dicts[0]["notes"][0], targetdb),
         "res_range_start": get_res_range(result_dicts[0]["notes"][0], targetdb),

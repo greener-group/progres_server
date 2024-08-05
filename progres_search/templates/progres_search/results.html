@@ -4,6 +4,8 @@
 
 {% block content %}
 
+<link rel="stylesheet" href="https://cdn.datatables.net/2.1.3/css/dataTables.dataTables.css" />
+<script src="https://cdn.datatables.net/2.1.3/js/dataTables.js"></script>
 <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
@@ -19,43 +21,55 @@
     <ul>
         <li>Job name: {{ submission.job_name }}</li>
         <li>Query size: {{ submission.n_res_total }} residues</li>
-        <li>n domains: {{ n_domains }}</li>
+        <li>n domains: {{ n_domains }} ( jump to
+            {% for i in domains_iter %}
+                <a href="#domain_{{ i }}">{{ i }} </a>
+            {% endfor %}
+        )</li>
         <li>Database: {{ submission.targetdb }}</li>
         <li>Parameters: minsimilarity {{ submission.minsimilarity }}, maxhits {{ submission.maxhits }}, chainsaw {{ chainsaw_str }}, faiss {{ faiss_str }}, progres v{{ progres_version }}</li>
     </ul>
 
     {% for domain_n, domain_size, domain_res_range, results in domains_zip %}
-        <h3>
+        <h3 id="domain_{{ domain_n }}">
             Domain {{ domain_n }}
         </h3>
+
+        <a href="#">
+            top
+        </a>
 
         <ul>
             <li>Domain size: {{ domain_size }} residues ({{ domain_res_range }})</li>
         </ul>
 
-        <table>
-            <tr>
-                <th>Hit n</th>
-                <th>Domain</th>
-                <th>Hit nres</th>
-                <th>Similarity</th>
-                <th>Notes</th>
-                <th>View</th>
-            </tr>
-            {% for domain, hit_nres, similarity, note, url, res_range in results %}
+        <table id="table_{{ domain_n }}">
+            <thead>
                 <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ domain }}</td>
-                    <td>{{ hit_nres }}</td>
-                    <td>{{ similarity }}</td>
-                    <td>{{ note }}</td>
-                    <td>
-                        <button onclick="view_structure('{{ url }}', '{{ res_range }}', {{ domain_n }}, {{ forloop.counter }});">
-                            View
-                        </button>
-                    </td>
+                    <th>Hit n</th>
+                    <th>Domain</th>
+                    <th>Hit nres</th>
+                    <th>Similarity</th>
+                    <th>Notes</th>
+                    <th>View</th>
                 </tr>
-            {% endfor %}
+            </thead>
+            <tbody>
+                {% for domain, hit_nres, similarity, note, url, res_range in results %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ domain }}</td>
+                        <td>{{ hit_nres }}</td>
+                        <td>{{ similarity }}</td>
+                        <td>{{ note }}</td>
+                        <td>
+                            <button onclick="view_structure('{{ url }}', '{{ res_range }}', {{ domain_n }}, {{ forloop.counter }});">
+                                View
+                            </button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
         </table>
     {% endfor %}
 </div>
@@ -122,8 +136,11 @@
         });
     };
 
-    document.addEventListener("DOMContentLoaded", function() {
+    $(document).ready( function () {
         view_structure('{{ url_start }}', '{{ res_range_start }}', 1, 1);
+        {% for i in domains_iter %}
+            $("#table_{{ i }}").DataTable();
+        {% endfor %}
     });
 </script>
 
