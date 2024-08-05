@@ -9,7 +9,7 @@ class Submission(models.Model):
     job_name = models.CharField(max_length=200, blank=True)
     n_res_total = models.IntegerField()
     res_ranges = models.CharField(max_length=200)
-    dom_coords_bb = models.JSONField()
+    dom_pdbs = models.JSONField()
     embeddings = models.JSONField()
     targetdb = models.CharField(
         max_length=20,

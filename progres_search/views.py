@@ -57,13 +57,13 @@ def read_ca_backbone(fp, fileformat="guess", res_ranges=None):
             domains_res.append(set(domain_res))
     
     n_domains = len(domains_res)
-    dom_coords_ca, dom_coords_bb = [[] for _ in range(n_domains)], [[] for _ in range(n_domains)]
+    dom_coords_ca, dom_pdbs = [[] for _ in range(n_domains)], ["" for _ in range(n_domains)]
     n_res_total = 0
 
     if chosen_format == "pdb":
         with open(fp) as f:
             for line in f.readlines():
-                if line.startswith("ATOM  ") or line.startswith("HETATM"):
+                if line.startswith("ATOM  "):
                     atom_name = line[12:16].strip()
                     if atom_name == "CA":
                         n_res_total += 1
@@ -71,11 +71,10 @@ def read_ca_backbone(fp, fileformat="guess", res_ranges=None):
                             if n_res_total in domains_res[di]:
                                 dom_coords_ca[di].append(read_pdb_coords(line))
                                 break
-                    if atom_name in backbone_atoms:
-                        for di in range(n_domains):
-                            if n_res_total in domains_res[di]:
-                                dom_coords_bb[di].append(read_pdb_coords(line))
-                                break
+                    for di in range(n_domains):
+                        if n_res_total in domains_res[di]:
+                            dom_pdbs[di] += line
+                            break
                 elif line.startswith("ENDMDL"):
                     break
     elif chosen_format == "mmcif" or chosen_format == "mmtf":
@@ -85,24 +84,27 @@ def read_ca_backbone(fp, fileformat="guess", res_ranges=None):
         else:
             struc = MMTFParser.get_structure(fp)
         for model in struc:
-            for atom in model.get_atoms():
-                if atom.get_name() == "CA":
-                    n_res_total += 1
-                    for di in range(n_domains):
-                        if n_res_total in domains_res[di]:
-                            cs = atom.get_coord()
-                            dom_coords_ca[di].append([float(cs[0]), float(cs[1]), float(cs[2])])
-                            break
-                if atom.get_name() in backbone_atoms:
-                    for di in range(n_domains):
-                        if n_res_total in domains_res[di]:
-                            cs = atom.get_coord()
-                            dom_coords_bb[di].append([float(cs[0]), float(cs[1]), float(cs[2])])
-                            break
+            for chain in model:
+                for res in chain:
+                    if res.id[0] == " ": # Ignore hetero atoms
+                        for a in res:
+                            if a.get_name() == "CA":
+                                n_res_total += 1
+                                for di in range(n_domains):
+                                    if n_res_total in domains_res[di]:
+                                        x, y, z = a.get_coord()
+                                        dom_coords_ca[di].append([float(x), float(y), float(z)])
+                                        break
+                            for di in range(n_domains):
+                                if n_res_total in domains_res[di]:
+                                    x, y, z = a.get_coord()
+                                    pdb_line = f"ATOM  {a.get_serial_number():>5} {a.get_fullname():4}{a.get_altloc():1}{res.get_resname():3} {chain.get_id():1}{res.get_id()[1]:>4}{res.get_id()[2]:1}   {x:8.3f}{y:8.3f}{z:8.3f}{a.get_occupancy():6.2f}{a.get_bfactor():6.2f}              \n"
+                                    dom_pdbs[di] += pdb_line
+                                    break
             break # Only read first model
     else:
         raise ValueError("fileformat must be \"guess\", \"pdb\", \"mmcif\" or \"mmtf\"")
-    return dom_coords_ca, dom_coords_bb, n_res_total
+    return dom_coords_ca, dom_pdbs, n_res_total
 
 def index(request):
     if request.method == "POST":
@@ -119,15 +121,15 @@ def index(request):
                 res_ranges = pg.predict_domains(temp_file.name)
             else:
                 res_ranges = None
-            dom_coords_ca, dom_coords_bb, n_res_total = read_ca_backbone(temp_file.name,
-                                                                         fileformat, res_ranges)
+            dom_coords_ca, dom_pdbs, n_res_total = read_ca_backbone(temp_file.name,
+                                                                    fileformat, res_ranges)
             temp_file.close()
             embeddings = [pg.embed_coords(c, model=pg_model).tolist() for c in dom_coords_ca]
             submission = Submission(
                 job_name=form.cleaned_data["job_name"],
                 n_res_total=n_res_total,
                 res_ranges=("all" if res_ranges is None else res_ranges),
-                dom_coords_bb=dom_coords_bb,
+                dom_pdbs=dom_pdbs,
                 embeddings=embeddings,
                 targetdb=form.cleaned_data["targetdb"],
                 fileformat=fileformat,
@@ -182,8 +184,8 @@ def results(request, submission_id):
         submission.maxhits,
     ))
 
-    results_zips, query_pdbs = [], []
-    for result_dict, coords_bb in zip(result_dicts, submission.dom_coords_bb):
+    results_zips = []
+    for result_dict in result_dicts:
         target_urls = [get_target_url(note, targetdb) for note in result_dict["notes"]]
         target_res_ranges = [get_res_range(note, targetdb) for note in result_dict["notes"]]
         results_zip = zip(result_dict["domains"], result_dict["hits_nres"],
@@ -191,20 +193,13 @@ def results(request, submission_id):
                           target_urls, target_res_ranges)
         results_zips.append(results_zip)
 
-        query_pdb = ""
-        for i, (x, y, z) in enumerate(coords_bb):
-            atom_name = backbone_atoms[i % 4]
-            res_n = (i // 4) + 1
-            query_pdb += f"ATOM  {(i + 1):5}  {atom_name:2}  ALA A{res_n:4}    {x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00           {atom_name[0]}  \n"
-        query_pdb += "END   \n"
-        query_pdbs.append(query_pdb)
-
     if submission.res_ranges == "all":
         query_res_ranges = [f"1-{submission.n_res_total}"]
     else:
         query_res_ranges = submission.res_ranges.split(",")
+    domains_iter = range(1, len(results_zips) + 1)
     domains_zip = zip(
-        list(range(1, len(results_zips) + 1)),
+        domains_iter,
         [get_domain_size(rr) for rr in query_res_ranges],
         query_res_ranges,
         results_zips,
@@ -212,9 +207,9 @@ def results(request, submission_id):
 
     context = {
         "submission"     : submission,
-        "query_pdbs"     : query_pdbs,
-        "n_domains"      : len(results_zips),
-        "domains_iter"   : range(1, len(results_zips) + 1),
+        "query_dom_pdbs" : submission.dom_pdbs,
+        "n_domains"      : len(domains_iter),
+        "domains_iter"   : domains_iter,
         "domains_zip"    : domains_zip,
         "url_start"      : get_target_url(result_dicts[0]["notes"][0], targetdb),
         "res_range_start": get_res_range(result_dicts[0]["notes"][0], targetdb),

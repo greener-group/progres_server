@@ -5,9 +5,9 @@
 {% block content %}
 
 <link rel="stylesheet" href="https://cdn.datatables.net/2.1.3/css/dataTables.dataTables.css" />
-<script src="https://cdn.datatables.net/2.1.3/js/dataTables.js"></script>
 <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/2.1.3/js/dataTables.js"></script>
 
 <a href="{% url 'progres_search:index' %}">
     Home
@@ -40,7 +40,7 @@
         </a>
 
         <ul>
-            <li>Domain size: {{ domain_size }} residues ({{ domain_res_range }})</li>
+            <li>Domain size: {{ domain_size }} residues ({{ domain_res_range }}, renumbering query from 1)</li>
         </ul>
 
         <table id="table_{{ domain_n }}">
@@ -99,28 +99,29 @@
         let element_query = $("#viewer_query");
         let element_target = $("#viewer_target");
         let config = {backgroundColor: "white"};
+        let ss_colours = { h: 0xff0000, s: 0xffff00, c: 0x00ff00 }
         let viewer_query = $3Dmol.createViewer(element_query, config);
         let viewer_target = $3Dmol.createViewer(element_target, config);
-        let query_pdbs = [
-            {% for query_pdb in query_pdbs %}
-                `{{ query_pdb }}`,
+        let query_dom_pdbs = [
+            {% for query_dom_pdb in query_dom_pdbs %}
+                `{{ query_dom_pdb }}`,
             {% endfor %}
         ];
         let resrange_list = res_range.split("_");
 
         jQuery.ajax(url, {
             success: function(target_pdb) {
-                viewer_query.addModel(query_pdbs[domain_n - 1], "pdb");
-                viewer_query.setStyle({}, {cartoon: {color: "blue"}});
+                viewer_query.addModel(query_dom_pdbs[domain_n - 1], "pdb");
+                viewer_query.setStyle({}, {cartoon: {colorscheme: {prop:"ss", map:ss_colours}}});
                 viewer_query.zoomTo();
                 viewer_query.render();
 
                 viewer_target.addModel(target_pdb, "pdb");
-                viewer_target.setStyle({}, {cartoon: {color: "grey", opacity: 0.8}});
+                viewer_target.setStyle({}, {cartoon: {color: "grey", opacity: 0.7}});
                 for (var i = 0; i < resrange_list.length; i++) {
                     viewer_target.setStyle(
                         {resi: resrange_list[i]},
-                        {cartoon: {color: "red"}},
+                        {cartoon: {colorscheme: {prop:"ss", map:ss_colours}}},
                     );
                 }
                 viewer_target.zoomTo();
