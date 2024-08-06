@@ -6,7 +6,11 @@ class Submission(models.Model):
     targetdbs   = [(x, x) for x in pg.pre_embedded_dbs_faiss + pg.pre_embedded_dbs]
     fileformats = [(x, x) for x in ["guess", "pdb", "mmcif", "mmtf"]]
 
-    job_name = models.CharField(max_length=200, blank=True)
+    job_name = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Give the job a name (optional).",
+    )
     n_res_total = models.IntegerField()
     res_ranges = models.CharField(max_length=200)
     dom_pdbs = models.JSONField()
@@ -16,25 +20,38 @@ class Submission(models.Model):
         choices=targetdbs,
         default="afted",
         verbose_name="Target database",
-        help_text="Choose a database to search against",
+        help_text="Choose a database to search against. afted is the <a href='https://www.biorxiv.org/content/10.1101/2024.03.18.585509'>TED domains</a> from the " +
+                  "AlphaFold database. scope95/scope40/cath40/ecod70 are domains from classifications of the PDB. " +
+                  "af21org is domains from the AlphaFold set of 21 model organisms.",
+    )
+    chainsaw = models.BooleanField(
+        default=False,
+        verbose_name="Split domains",
+        help_text="Whether to split the query structure into domains with <a href='https://doi.org/10.1093/bioinformatics/btae296'>Chainsaw</a> and search " +
+                  "with each domain separately. Recommended for structures above 200-300 residues.",
+    )
+    minsimilarity = models.FloatField(
+        default=0.8,
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+        verbose_name="Minimum similarity",
+        help_text="The Progres score above which to return hits. The default of 0.8 indicates " +
+                  "the same fold. Must be 0 -> 1.",
+    )
+    maxhits = models.IntegerField(
+        default=100,
+        validators=[MinValueValidator(1), MaxValueValidator(1000)],
+        verbose_name="Max number of hits",
+        help_text="The maximum number of hits per domain to return. Must be 1 -> 1000.",
     )
     fileformat = models.CharField(
         max_length=20,
         choices=fileformats,
         default="guess",
         verbose_name="File format",
+        help_text="By default the format of the uploaded file is guessed from the file " +
+                  "extension, but it can be set explicitly here. Supported formats are " +
+                  "PDB, mmCIF and MMTF (MMTF is not compatible with domain splitting).",
     )
-    minsimilarity = models.FloatField(
-        default=0.8,
-        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
-        verbose_name="Minimum similarity",
-    )
-    maxhits = models.IntegerField(
-        default=100,
-        validators=[MinValueValidator(1), MaxValueValidator(1000)],
-        verbose_name="Max number of hits",
-    )
-    chainsaw = models.BooleanField(default=False, verbose_name="Split domains")
     submission_time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
