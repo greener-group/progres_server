@@ -4,20 +4,50 @@
 
 {% block content %}
 
-<h1>
-    Progres server
-</h1>
+<div id="index">
+    <h1>
+        Progres server
+    </h1>
 
-<h2>
-    Submit:
-</h2>
+    <p>
+        Progres lets you quickly search protein structures against pre-embedded structural databases.
+        This can be useful for remote homology detection, protein classification and inferring function from structure.
+    <p>
+    </p>
+        Due to the way it is trained, Progres is only compatible with individual protein domains. However, queries can be automatically split into domains before searching.
+    <p>
+    </p>
+        If you want to search with many structures or embed databases to search against, please see the <a href="https://github.com/greener-group/progres">Progres software</a>.
+    </p>
+    <p>
+        If you use the Progres web server or software, please cite the paper:
+    </p>
 
-<form action="" method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    <table>
-        {{ form }}
-    </table>
-    <input type="submit" value="Submit">
-</form>
+    <ul>
+        <li>
+            Greener JG and Jamali K, Fast protein structure searching using structure graph embeddings, <em>bioRxiv</em> - <a href="https://www.biorxiv.org/content/10.1101/2022.11.28.518224">link</a>
+        </li>
+    </ul>
+
+    <h2>
+        Submit:
+    </h2>
+
+    <form action="" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <table>
+            {{ form }}
+        </table>
+        <input type="submit" value="Submit">
+    </form>
+
+    <p>
+        Or view an <a href="{% url 'progres_search:results' 1 %}">example results page</a>.
+    </p>
+
+    <p>
+        If you find an issue with the web server, please <a href="https://github.com/greener-group/progres_server/issues">open an issue</a> or <a href="https://www2.mrc-lmb.cam.ac.uk/groups/greener">get in touch</a>.
+    </p>
+</div>
 
 {% endblock %}

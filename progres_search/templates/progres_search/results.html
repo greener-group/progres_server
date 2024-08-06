@@ -23,7 +23,7 @@
         <li>Query size: {{ submission.n_res_total }} residues</li>
         <li>n domains: {{ n_domains }} ( jump to
             {% for i in domains_iter %}
-                <a href="#domain_{{ i }}">{{ i }} </a>
+                <a href="#domain_{{ i }}">{{ i }}</a>{% if not forloop.last %} / {% endif %}
             {% endfor %}
         )</li>
         <li>Database: {{ submission.targetdb }}</li>
@@ -43,7 +43,7 @@
             <li>Domain size: {{ domain_size }} residues ({{ domain_res_range }}, renumbering query from 1)</li>
         </ul>
 
-        <table id="table_{{ domain_n }}">
+        <table id="table_{{ domain_n }}" class="results_table">
             <thead>
                 <tr>
                     <th>Hit n</th>
