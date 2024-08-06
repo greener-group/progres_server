@@ -144,15 +144,21 @@ def index(request):
         form = SubmitJobForm()
     return render(request, "progres_search/index.html", {"form": form})
 
-def get_target_url(note, targetdb):
+def get_target_url(hid, note, targetdb):
     if targetdb == "afted":
         afdb_id = note.split()[0]
         return f"https://alphafold.ebi.ac.uk/files/{afdb_id}-model_v4.pdb"
+    elif targetdb == "af21org":
+        entry_id = hid.split("_")[1]
+        return f"https://alphafold.ebi.ac.uk/files/AF-{entry_id}-F1-model_v4.pdb"
     return ""
 
-def get_res_range(note, targetdb):
+def get_res_range(hid, note, targetdb):
     if targetdb == "afted":
         return note.split()[1]
+    elif targetdb == "af21org":
+        cols = hid.split("_")
+        return f"{cols[2]}-{cols[3]}"
     return ""
 
 def get_domain_size(res_range):
@@ -186,8 +192,10 @@ def results(request, submission_id):
 
     results_zips = []
     for result_dict in result_dicts:
-        target_urls = [get_target_url(note, targetdb) for note in result_dict["notes"]]
-        target_res_ranges = [get_res_range(note, targetdb) for note in result_dict["notes"]]
+        target_urls = [get_target_url(hid, note, targetdb) for hid, note in zip(
+                                                result_dict["domains"], result_dict["notes"])]
+        target_res_ranges = [get_res_range(hid, note, targetdb) for hid, note in zip(
+                                                result_dict["domains"], result_dict["notes"])]
         results_zip = zip(result_dict["domains"], result_dict["hits_nres"],
                           result_dict["similarities"], result_dict["notes"],
                           target_urls, target_res_ranges)
@@ -204,6 +212,9 @@ def results(request, submission_id):
         query_res_ranges,
         results_zips,
     )
+    rd_1_id, rd_1_note = result_dicts[0]["domains"][0], result_dicts[0]["notes"][0]
+    url_start = get_target_url(rd_1_id, rd_1_note, targetdb)
+    res_range_start = get_res_range(rd_1_id, rd_1_note, targetdb)
 
     context = {
         "submission"     : submission,
@@ -211,8 +222,8 @@ def results(request, submission_id):
         "n_domains"      : len(domains_iter),
         "domains_iter"   : domains_iter,
         "domains_zip"    : domains_zip,
-        "url_start"      : get_target_url(result_dicts[0]["notes"][0], targetdb),
-        "res_range_start": get_res_range(result_dicts[0]["notes"][0], targetdb),
+        "url_start"      : url_start,
+        "res_range_start": res_range_start,
         "progres_version": importlib.metadata.version("progres"),
         "chainsaw_str"   : "yes" if submission.chainsaw else "no",
         "faiss_str"      : "yes" if search_type == "faiss" else "no",
