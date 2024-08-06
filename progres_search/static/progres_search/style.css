@@ -1,8 +1,11 @@
 #content {
     padding-left: 10px;
 }
-#index {
+.text_block {
     max-width: 800px;
+}
+#submission_table {
+    max-width: 1200px;
 }
 #results_left {
     width: 60%;

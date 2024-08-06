@@ -30,13 +30,15 @@
         <li>Parameters: minsimilarity {{ submission.minsimilarity }}, maxhits {{ submission.maxhits }}, chainsaw {{ chainsaw_str }}, faiss {{ faiss_str }}, progres v{{ progres_version }}</li>
     </ul>
 
+    <hr>
+
     {% for domain_n, domain_size, domain_res_range, results in domains_zip %}
         <h3 id="domain_{{ domain_n }}">
             Domain {{ domain_n }}
         </h3>
 
         <a href="#">
-            top
+            Go to top
         </a>
 
         <ul>
@@ -60,7 +62,7 @@
                         <td>{{ forloop.counter }}</td>
                         <td>{{ domain }}</td>
                         <td>{{ hit_nres }}</td>
-                        <td>{{ similarity }}</td>
+                        <td>{{ similarity|floatformat:4 }}</td>
                         <td>{{ note }}</td>
                         <td>
                             <button onclick="view_structure('{{ url }}', '{{ res_range }}', {{ domain_n }}, {{ forloop.counter }});">
@@ -71,6 +73,8 @@
                 {% endfor %}
             </tbody>
         </table>
+
+        <hr>
     {% endfor %}
 </div>
 

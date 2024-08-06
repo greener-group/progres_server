@@ -4,22 +4,20 @@
 
 {% block content %}
 
-<div id="index">
-    <h1>
-        Progres server
-    </h1>
+<h1>
+    Progres server
+</h1>
 
+<div class="text_block">
     <p>
         Progres lets you quickly search protein structures against pre-embedded structural databases.
         This can be useful for remote homology detection, protein classification and inferring function from structure.
     <p>
     </p>
-        Due to the way it is trained, Progres is only compatible with individual protein domains. However, queries can be automatically split into domains before searching.
+        Due to the way it is trained, Progres works with protein domains rather than whole structures. However, queries can be automatically split into domains before searching.
     <p>
     </p>
         If you want to search with many structures or embed databases to search against, please see the <a href="https://github.com/greener-group/progres">Progres software</a>.
-    </p>
-    <p>
         If you use the Progres web server or software, please cite the paper:
     </p>
 
@@ -28,19 +26,32 @@
             Greener JG and Jamali K, Fast protein structure searching using structure graph embeddings, <em>bioRxiv</em> - <a href="https://www.biorxiv.org/content/10.1101/2022.11.28.518224">link</a>
         </li>
     </ul>
+</div>
 
-    <h2>
-        Submit:
-    </h2>
+<hr>
 
+<h2>
+    Submit:
+</h2>
+
+<div>
     <form action="" method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        <table>
-            {{ form }}
+        <table id="submission_table" class="table">
+            {% for field in form %}
+                <tr>
+                    <th>{{ field.label_tag }}</th>
+                    <td>{{ field }} {{ field.errors }}</td>
+                    <td>{{ field.help_text|safe }}</td>
+                </tr>
+            {% endfor %}
         </table>
+        {{ form.non_field_errors }}
         <input type="submit" value="Submit">
     </form>
+</div>
 
+<div class="text_block">
     <p>
         Or view an <a href="{% url 'progres_search:results' 1 %}">example results page</a>.
     </p>
