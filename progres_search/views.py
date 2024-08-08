@@ -21,11 +21,11 @@ print("Loading Progres data, this will take a minute")
 
 data_dir = os.path.join(os.path.dirname(__file__), "data")
 
-pg_model = pg.load_trained_model()
+pg_model = pg.load_trained_model(device)
 target_data_dict = {}
 for targetdb in (pg.pre_embedded_dbs_faiss + pg.pre_embedded_dbs):
     fp = os.path.join(pg.database_dir, targetdb + ".pt")
-    target_data_dict[targetdb] = torch.load(fp)
+    target_data_dict[targetdb] = torch.load(fp, map_location=device)
 target_index_dict = {}
 for targetdb in pg.pre_embedded_dbs_faiss:
     fp = os.path.join(pg.database_dir, f"{targetdb}.index")
@@ -172,7 +172,8 @@ def index(request):
             dom_coords_ca, dom_pdbs, n_res_total = read_ca_backbone(temp_file.name,
                                                                     fileformat, res_ranges)
             temp_file.close()
-            embeddings = [pg.embed_coords(c, model=pg_model).tolist() for c in dom_coords_ca]
+            embeddings = [pg.embed_coords(c, model=pg_model, device=device).tolist()
+                          for c in dom_coords_ca]
             submission = Submission(
                 job_name=form.cleaned_data["job_name"],
                 n_res_total=n_res_total,
@@ -233,7 +234,7 @@ def results(request, submission_id):
     submission = get_object_or_404(Submission, pk=submission_id)
     targetdb = submission.targetdb
     search_type = "faiss" if targetdb in pg.pre_embedded_dbs_faiss else "torch"
-    embs_cat = torch.stack([torch.tensor(emb) for emb in submission.embeddings])
+    embs_cat = torch.stack([torch.tensor(emb) for emb in submission.embeddings]).to(device)
     data_loader = DataLoader(
         pg.EmbeddingDataset(embs_cat),
         batch_size=pg.get_batch_size(search_type == "faiss"),
