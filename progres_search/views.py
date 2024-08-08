@@ -123,9 +123,11 @@ def read_ca_backbone(fp, fileformat="guess", res_ranges="all"):
             struc = MMTFParser.get_structure(fp)
         for model in struc:
             for chain in model:
+                chain_id = chain.get_id()[0] # Restrict chain ID to be one character
                 for res in chain:
                     if res.get_id()[0] == " ": # Ignore hetero atoms
-                        resnum = res.get_id()[1]
+                        resnum, ins_code = res.get_id()[1], res.get_id()[2]
+                        resname = res.get_resname()
                         for a in res:
                             if a.get_name() == "CA":
                                 n_res_total += 1
@@ -137,7 +139,7 @@ def read_ca_backbone(fp, fileformat="guess", res_ranges="all"):
                             for di in range(n_domains):
                                 if res_ranges == "all" or resnum in domains_res[di]:
                                     x, y, z = a.get_coord()
-                                    pdb_line = f"ATOM  {a.get_serial_number():>5} {a.get_fullname():4}{a.get_altloc():1}{res.get_resname():3} {chain.get_id():1}{res.get_id()[1]:>4}{res.get_id()[2]:1}   {x:8.3f}{y:8.3f}{z:8.3f}{a.get_occupancy():6.2f}{a.get_bfactor():6.2f}              \n"
+                                    pdb_line = f"ATOM  {a.get_serial_number():>5} {a.get_fullname():4}{a.get_altloc():1}{resname:3} {chain_id:1}{resnum:>4}{ins_code:1}   {x:8.3f}{y:8.3f}{z:8.3f}{a.get_occupancy():6.2f}{a.get_bfactor():6.2f}              \n"
                                     dom_pdbs[di] += pdb_line
                                     break
                 break # Only read first chain
