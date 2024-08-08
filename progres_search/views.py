@@ -75,19 +75,10 @@ backbone_atoms = ["N", "CA", "C", "O"]
 def read_pdb_coords(line):
     return [float(line[30:38]), float(line[38:46]), float(line[46:54])]
 
-def read_ca_backbone(fp, fileformat="guess", res_ranges=None):
-    if fileformat == "guess":
-        chosen_format = "pdb"
-        file_ext = os.path.splitext(fp)[1].lower()
-        if file_ext == ".cif" or file_ext == ".mmcif":
-            chosen_format = "mmcif"
-        elif file_ext == ".mmtf":
-            chosen_format = "mmtf"
-    else:
-        chosen_format = fileformat
-
-    if res_ranges is None:
-        domains_res = [set(range(1, 10000+1))]
+def read_ca_backbone(fp, fileformat="guess", res_ranges="all"):
+    chosen_format = pg.get_file_format(fp, fileformat)
+    if res_ranges == "all":
+        n_domains = 1
     else:
         domains_res = []
         for res_range in res_ranges.split(","):
@@ -96,24 +87,30 @@ def read_ca_backbone(fp, fileformat="guess", res_ranges=None):
                 res_start, res_end = rr.split("-")
                 domain_res.extend(range(int(res_start), int(res_end) + 1))
             domains_res.append(set(domain_res))
-    
-    n_domains = len(domains_res)
+            n_domains = len(domains_res)
+
     dom_coords_ca, dom_pdbs = [[] for _ in range(n_domains)], ["" for _ in range(n_domains)]
     n_res_total = 0
 
     if chosen_format == "pdb":
         with open(fp) as f:
+            chain_id = None
             for line in f.readlines():
                 if line.startswith("ATOM  "):
+                    if chain_id is None:
+                        chain_id = line[21]
+                    elif line[21] != chain_id:
+                        break # Only read first chain
+                    resnum = int(line[22:26])
                     atom_name = line[12:16].strip()
                     if atom_name == "CA":
                         n_res_total += 1
                         for di in range(n_domains):
-                            if n_res_total in domains_res[di]:
+                            if res_ranges == "all" or resnum in domains_res[di]:
                                 dom_coords_ca[di].append(read_pdb_coords(line))
                                 break
                     for di in range(n_domains):
-                        if n_res_total in domains_res[di]:
+                        if res_ranges == "all" or resnum in domains_res[di]:
                             dom_pdbs[di] += line
                             break
                 elif line.startswith("ENDMDL"):
@@ -127,21 +124,23 @@ def read_ca_backbone(fp, fileformat="guess", res_ranges=None):
         for model in struc:
             for chain in model:
                 for res in chain:
-                    if res.id[0] == " ": # Ignore hetero atoms
+                    if res.get_id()[0] == " ": # Ignore hetero atoms
+                        resnum = res.get_id()[1]
                         for a in res:
                             if a.get_name() == "CA":
                                 n_res_total += 1
                                 for di in range(n_domains):
-                                    if n_res_total in domains_res[di]:
+                                    if res_ranges == "all" or resnum in domains_res[di]:
                                         x, y, z = a.get_coord()
                                         dom_coords_ca[di].append([float(x), float(y), float(z)])
                                         break
                             for di in range(n_domains):
-                                if n_res_total in domains_res[di]:
+                                if res_ranges == "all" or resnum in domains_res[di]:
                                     x, y, z = a.get_coord()
                                     pdb_line = f"ATOM  {a.get_serial_number():>5} {a.get_fullname():4}{a.get_altloc():1}{res.get_resname():3} {chain.get_id():1}{res.get_id()[1]:>4}{res.get_id()[2]:1}   {x:8.3f}{y:8.3f}{z:8.3f}{a.get_occupancy():6.2f}{a.get_bfactor():6.2f}              \n"
                                     dom_pdbs[di] += pdb_line
                                     break
+                break # Only read first chain
             break # Only read first model
     else:
         raise ValueError("fileformat must be \"guess\", \"pdb\", \"mmcif\" or \"mmtf\"")
@@ -159,9 +158,17 @@ def index(request):
                 for chunk in request.FILES["file"].chunks():
                     destination.write(chunk)
             if chainsaw:
-                res_ranges = pg.predict_domains(temp_file.name)
+                res_ranges = pg.predict_domains(
+                    temp_file.name,
+                    pg.get_file_format(temp_file.name, fileformat),
+                    device,
+                )
+                if res_ranges is None:
+                    error_text = ("Chainsaw did not find any domains in your uploaded protein "
+                                  "structure. Try running without splitting into domains.")
+                    return render(request, "progres_search/error.html", {"error_text": error_text})
             else:
-                res_ranges = None
+                res_ranges = "all"
             dom_coords_ca, dom_pdbs, n_res_total = read_ca_backbone(temp_file.name,
                                                                     fileformat, res_ranges)
             temp_file.close()
@@ -169,7 +176,7 @@ def index(request):
             submission = Submission(
                 job_name=form.cleaned_data["job_name"],
                 n_res_total=n_res_total,
-                res_ranges=("all" if res_ranges is None else res_ranges),
+                res_ranges=res_ranges,
                 dom_pdbs=dom_pdbs,
                 embeddings=embeddings,
                 targetdb=form.cleaned_data["targetdb"],
@@ -189,18 +196,31 @@ def get_target_url(hid, note, targetdb):
     if targetdb == "afted":
         afdb_id = note.split()[0]
         return f"https://alphafold.ebi.ac.uk/files/{afdb_id}-model_v4.pdb"
+    elif targetdb == "scope95" or targetdb == "scope40":
+        pdbid = scope_data[hid][1]
+        return f"https://files.rcsb.org/download/{pdbid}.pdb"
+    elif targetdb == "cath40":
+        pdbid = hid[:4].upper()
+        return f"https://files.rcsb.org/download/{pdbid}.pdb"
+    elif targetdb == "ecod70":
+        pdbid = ecod_data[hid][1]
+        return f"https://files.rcsb.org/download/{pdbid}.pdb"
     elif targetdb == "af21org":
         entry_id = hid.split("_")[1]
         return f"https://alphafold.ebi.ac.uk/files/AF-{entry_id}-F1-model_v4.pdb"
-    return ""
 
 def get_res_range(hid, note, targetdb):
     if targetdb == "afted":
-        return note.split()[1]
+        return note.split()[1] + ":A"
+    elif targetdb == "scope95" or targetdb == "scope40":
+        return scope_data[hid][0]
+    elif targetdb == "cath40":
+        return cath_data[hid]
+    elif targetdb == "ecod70":
+        return ecod_data[hid][0]
     elif targetdb == "af21org":
         cols = hid.split("_")
-        return f"{cols[2]}-{cols[3]}"
-    return ""
+        return f"{cols[2]}-{cols[3]}:A"
 
 def get_domain_size(res_range):
     n_res = 0

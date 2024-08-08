@@ -21,13 +21,19 @@
     <ul>
         <li>Job name: {{ submission.job_name }}</li>
         <li>Query size: {{ submission.n_res_total }} residues</li>
-        <li>n domains: {{ n_domains }} ( jump to
-            {% for i in domains_iter %}
-                <a href="#domain_{{ i }}">{{ i }}</a>{% if not forloop.last %} / {% endif %}
-            {% endfor %}
-        )</li>
+        <li>
+            n domains: {{ n_domains }} ( jump to
+                {% for i in domains_iter %}
+                    <a href="#domain_{{ i }}">{{ i }}</a>{% if not forloop.last %} / {% endif %}
+                {% endfor %}
+            )
+        </li>
         <li>Database: {{ submission.targetdb }}</li>
-        <li>Parameters: minsimilarity {{ submission.minsimilarity }}, maxhits {{ submission.maxhits }}, chainsaw {{ chainsaw_str }}, faiss {{ faiss_str }}, progres v{{ progres_version }}</li>
+        <li>
+            Parameters: minsimilarity {{ submission.minsimilarity }},
+            maxhits {{ submission.maxhits }}, chainsaw {{ chainsaw_str }},
+            faiss {{ faiss_str }}, progres v{{ progres_version }}
+        </li>
     </ul>
 
     <hr>
@@ -42,7 +48,9 @@
         </a>
 
         <ul>
-            <li>Domain size: {{ domain_size }} residues ({{ domain_res_range }}, renumbering query from 1)</li>
+            <li>
+                Domain size: {{ domain_size }} residues ({{ domain_res_range }})
+            </li>
         </ul>
 
         <table id="table_{{ domain_n }}" class="results_table">
@@ -57,7 +65,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for domain, hit_nres, similarity, note, url, res_range in results %}
+                {% for domain, hit_nres, similarity, note, url, target_res_range in results %}
                     <tr>
                         <td>{{ forloop.counter }}</td>
                         <td>{{ domain }}</td>
@@ -65,7 +73,7 @@
                         <td>{{ similarity|floatformat:4 }}</td>
                         <td>{{ note }}</td>
                         <td>
-                            <button onclick="view_structure('{{ url }}', '{{ res_range }}', {{ domain_n }}, {{ forloop.counter }});">
+                            <button onclick="view_structure('{{ url }}', '{{ target_res_range }}', {{ domain_n }}, {{ forloop.counter }});">
                                 View
                             </button>
                         </td>
@@ -99,7 +107,7 @@
 </div>
 
 <script>
-    function view_structure(url, res_range, domain_n, hit_n) {
+    function view_structure(url, target_res_range, domain_n, hit_n) {
         let element_query = $("#viewer_query");
         let element_target = $("#viewer_target");
         let config = {backgroundColor: "white"};
@@ -111,7 +119,8 @@
                 `{{ query_dom_pdb }}`,
             {% endfor %}
         ];
-        let resrange_list = res_range.split("_");
+        let res_range_list = target_res_range.split(":")[0].split("_");
+        let chain_id = target_res_range.split(":")[1];
 
         jQuery.ajax(url, {
             success: function(target_pdb) {
@@ -122,9 +131,10 @@
 
                 viewer_target.addModel(target_pdb, "pdb");
                 viewer_target.setStyle({}, {cartoon: {color: "grey", opacity: 0.7}});
-                for (var i = 0; i < resrange_list.length; i++) {
+                for (var i = 0; i < res_range_list.length; i++) {
                     viewer_target.setStyle(
-                        {resi: resrange_list[i]},
+                        res_range_list[i] == "*" ? {chain: chain_id} :
+                                                   {chain: chain_id, resi: res_range_list[i]},
                         {cartoon: {colorscheme: {prop:"ss", map:ss_colours}}},
                     );
                 }
@@ -133,7 +143,7 @@
                 $("#query_info").html("Query domain " + domain_n)
                 $("#hit_info_n").html(hit_n)
                 $("#hit_info_url").html("<a href='" + url + "'>" + url + "</a>")
-                $("#hit_info_res").html(res_range)
+                $("#hit_info_res").html(target_res_range)
             },
             error: function(hdr, status, err) {
                 console.error("Failed to load PDB " + url + ": " + err);
@@ -142,10 +152,10 @@
     };
 
     $(document).ready( function () {
-        view_structure('{{ url_start }}', '{{ res_range_start }}', 1, 1);
         {% for i in domains_iter %}
             $("#table_{{ i }}").DataTable();
         {% endfor %}
+        view_structure('{{ url_start }}', '{{ res_range_start }}', 1, 1);
     });
 </script>
 
