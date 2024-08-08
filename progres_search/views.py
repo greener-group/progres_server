@@ -155,24 +155,38 @@ def index(request):
             fileformat = form.cleaned_data["fileformat"]
             chainsaw = form.cleaned_data["chainsaw"]
             # Keep the file name ending to allow the file format to be guessed
-            temp_file = NamedTemporaryFile(suffix=("." + request.FILES["file"].name))
-            with open(temp_file.name, "wb+") as destination:
-                for chunk in request.FILES["file"].chunks():
-                    destination.write(chunk)
+            try:
+                temp_file = NamedTemporaryFile(suffix=("." + request.FILES["file"].name))
+                with open(temp_file.name, "wb+") as destination:
+                    for chunk in request.FILES["file"].chunks():
+                        destination.write(chunk)
+            except:
+                error_text = "Error uploading file. Maybe try again later."
+                return render(request, "progres_search/error.html", {"error_text": error_text})
             if chainsaw:
-                res_ranges = pg.predict_domains(
-                    temp_file.name,
-                    pg.get_file_format(temp_file.name, fileformat),
-                    device,
-                )
+                try:
+                    res_ranges = pg.predict_domains(
+                        temp_file.name,
+                        pg.get_file_format(temp_file.name, fileformat),
+                        device,
+                    )
+                except:
+                    error_text = ("Error running Chainsaw. Check your uploaded file and make "
+                                  "sure the correct file format is selected during upload.")
+                    return render(request, "progres_search/error.html", {"error_text": error_text})
                 if res_ranges is None:
                     error_text = ("Chainsaw did not find any domains in your uploaded protein "
                                   "structure. Try running without splitting into domains.")
                     return render(request, "progres_search/error.html", {"error_text": error_text})
             else:
                 res_ranges = "all"
-            dom_coords_ca, dom_pdbs, n_res_total = read_ca_backbone(temp_file.name,
-                                                                    fileformat, res_ranges)
+            try:
+                dom_coords_ca, dom_pdbs, n_res_total = read_ca_backbone(temp_file.name,
+                                                                        fileformat, res_ranges)
+            except:
+                error_text = ("Error reading structure file. Check your uploaded file and make "
+                              "sure the correct file format is selected during upload.")
+                return render(request, "progres_search/error.html", {"error_text": error_text})
             temp_file.close()
             embeddings = [pg.embed_coords(c, model=pg_model, device=device).tolist()
                           for c in dom_coords_ca]
