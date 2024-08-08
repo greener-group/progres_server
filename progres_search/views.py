@@ -15,7 +15,11 @@ from tempfile import NamedTemporaryFile
 from .models import Submission
 from .forms import SubmitJobForm
 
+device = "cpu"
+
 print("Loading Progres data, this will take a minute")
+
+data_dir = os.path.join(os.path.dirname(__file__), "data")
 
 pg_model = pg.load_trained_model()
 target_data_dict = {}
@@ -26,6 +30,43 @@ target_index_dict = {}
 for targetdb in pg.pre_embedded_dbs_faiss:
     fp = os.path.join(pg.database_dir, f"{targetdb}.index")
     target_index_dict[targetdb] = faiss.read_index(fp)
+
+scope_data = {}
+with open(os.path.join(data_dir, "dir.des.scope.2.08-stable.txt")) as f:
+    for line in f.readlines():
+        if not line.startswith("#"):
+            cols = line.split()
+            if cols[1] == "px":
+                dom_id, pdb_id, res_range_scope = cols[3], cols[4], cols[5]
+                if res_range_scope != "-":
+                    chain_id = res_range_scope.split(":")[0]
+                    if res_range_scope.endswith(":"):
+                        res_range = "*:" + chain_id
+                    else:
+                        res_ranges = [rr.split(":")[1] for rr in res_range_scope.split(",")]
+                        res_range = "_".join(res_ranges) + ":" + chain_id
+                    scope_data[dom_id] = [res_range, pdb_id]
+
+cath_data = {}
+with open(os.path.join(data_dir, "cath-b-newest-all")) as f:
+    for line in f.readlines():
+        cols = line.split()
+        dom_id, res_range_cath = cols[0], cols[3]
+        res_ranges = [rr.split(":")[0] for rr in res_range_cath.split(",")]
+        chain_id = res_range_cath.split(":")[-1]
+        res_range = "_".join(res_ranges) + ":" + chain_id
+        cath_data[dom_id] = res_range
+
+ecod_data = {}
+with open(os.path.join(data_dir, "ecod.latest.F70.domains.txt")) as f:
+    for line in f.readlines():
+        if not line.startswith("#"):
+            cols = line.split()
+            dom_id, pdb_id, res_range_ecod = cols[1], cols[4], cols[6]
+            res_ranges = [rr.split(":")[1] for rr in res_range_ecod.split(",")]
+            chain_id = res_range_ecod.split(":")[0]
+            res_range = "_".join(res_ranges) + ":" + chain_id
+            ecod_data[dom_id] = [res_range, pdb_id]
 
 print("Loaded Progres data")
 
