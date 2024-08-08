@@ -24,7 +24,9 @@ class Submission(models.Model):
                    "<a href='https://www.biorxiv.org/content/10.1101/2024.03.18.585509'>"
                    "TED domains</a> from the AlphaFold database. scope95/scope40/cath40/ecod70 "
                    "are domains from classifications of the PDB. af21org is domains from the "
-                   "AlphaFold set of 21 model organisms."),
+                   "AlphaFold set of 21 model organisms. See "
+                   "<a href='https://github.com/greener-group/progres#available-databases'> "
+                   "here</a> for more info."),
     )
     chainsaw = models.BooleanField(
         default=False,
