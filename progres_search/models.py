@@ -6,6 +6,7 @@ class Submission(models.Model):
     targetdbs   = [(x, x) for x in pg.pre_embedded_dbs_faiss + pg.pre_embedded_dbs]
     fileformats = [(x, x) for x in ["guess", "pdb", "mmcif", "mmtf"]]
 
+    url_str = models.CharField(max_length=20)
     job_name = models.CharField(
         max_length=200,
         blank=True,
@@ -25,7 +26,7 @@ class Submission(models.Model):
                    "TED domains</a> from the AlphaFold database. scope95/scope40/cath40/ecod70 "
                    "are domains from classifications of the PDB. af21org is domains from the "
                    "AlphaFold set of 21 model organisms. See "
-                   "<a href='https://github.com/greener-group/progres#available-databases'> "
+                   "<a href='https://github.com/greener-group/progres#available-databases'>"
                    "here</a> for more info."),
     )
     chainsaw = models.BooleanField(

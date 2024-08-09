@@ -5,5 +5,5 @@ from . import views
 app_name = "progres_search"
 urlpatterns = [
     path("", views.index, name="index"),
-    path("results/<int:submission_id>", views.results, name="results"),
+    path("results/<str:submission_url_str>", views.results, name="results"),
 ]

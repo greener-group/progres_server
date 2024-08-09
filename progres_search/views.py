@@ -10,11 +10,14 @@ import torch
 from torch_geometric.loader import DataLoader
 import importlib.metadata
 import os
+from random import choices
+import string
 from tempfile import NamedTemporaryFile
 
 from .models import Submission
 from .forms import SubmitJobForm
 
+base_url = "progres.mrc-lmb.cam.ac.uk"
 device = "cpu"
 
 print("Loading Progres data, this will take a minute")
@@ -148,6 +151,14 @@ def read_ca_backbone(fp, fileformat="guess", res_ranges="all"):
         raise ValueError("fileformat must be \"guess\", \"pdb\", \"mmcif\" or \"mmtf\"")
     return dom_coords_ca, dom_pdbs, n_res_total
 
+def generate_url_str():
+    done = False
+    while not done:
+        trial_url_str = "".join(choices(string.ascii_uppercase + string.digits, k=6))
+        if len(Submission.objects.filter(url_str=trial_url_str)) == 0:
+            done = True
+    return trial_url_str
+
 def index(request):
     if request.method == "POST":
         form = SubmitJobForm(request.POST, request.FILES)
@@ -190,7 +201,9 @@ def index(request):
             temp_file.close()
             embeddings = [pg.embed_coords(c, model=pg_model, device=device).tolist()
                           for c in dom_coords_ca]
+            url_str = generate_url_str()
             submission = Submission(
+                url_str=url_str,
                 job_name=form.cleaned_data["job_name"],
                 n_res_total=n_res_total,
                 res_ranges=res_ranges,
@@ -204,7 +217,7 @@ def index(request):
                 submission_time=timezone.now(),
             )
             submission.save()
-            return HttpResponseRedirect(reverse("progres_search:results", args=(submission.id,)))
+            return HttpResponseRedirect(reverse("progres_search:results", args=(url_str,)))
     else:
         form = SubmitJobForm()
     return render(request, "progres_search/index.html", {"form": form})
@@ -246,8 +259,8 @@ def get_domain_size(res_range):
         n_res += int(res_end) - int(res_start) + 1
     return n_res
 
-def results(request, submission_id):
-    submission = get_object_or_404(Submission, pk=submission_id)
+def results(request, submission_url_str):
+    submission = get_object_or_404(Submission, url_str=submission_url_str)
     targetdb = submission.targetdb
     search_type = "faiss" if targetdb in pg.pre_embedded_dbs_faiss else "torch"
     embs_cat = torch.stack([torch.tensor(emb) for emb in submission.embeddings]).to(device)
@@ -302,6 +315,7 @@ def results(request, submission_id):
         "domains_zip"    : domains_zip,
         "url_start"      : url_start,
         "res_range_start": res_range_start,
+        "base_url"       : base_url,
         "progres_version": importlib.metadata.version("progres"),
         "chainsaw_str"   : "yes" if submission.chainsaw else "no",
         "faiss_str"      : "yes" if search_type == "faiss" else "no",

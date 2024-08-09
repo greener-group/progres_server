@@ -20,6 +20,7 @@
 <div id="results_left">
     <ul>
         <li>Job name: {{ submission.job_name }}</li>
+        <li>URL: <a href="https://{{ base_url }}/results/{{ submission.url_str }}">{{ base_url }}/results/{{ submission.url_str }}</a></li>
         <li>Query size: {{ submission.n_res_total }} residues</li>
         <li>
             n domains: {{ n_domains }} ( jump to
