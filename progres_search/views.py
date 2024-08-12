@@ -89,8 +89,7 @@ def read_ca_backbone(fp, fileformat="guess", res_ranges="all"):
         for res_range in res_ranges.split(","):
             domain_res = []
             for rr in res_range.split("_"):
-                res_start, res_end = re.sub(r"[^0-9-]", "", rr).split("-") # Remove ins code
-                domain_res.extend(range(int(res_start), int(res_end) + 1))
+                domain_res.extend(pg.extract_res_range(rr))
             domains_res.append(set(domain_res))
             n_domains = len(domains_res)
 
@@ -185,7 +184,8 @@ def index(request):
                     )
                 except:
                     error_text = ("Error running Chainsaw. Check your uploaded file and make "
-                                  "sure the correct file format is selected during upload.")
+                                  "sure that it contains protein residues and that the correct "
+                                  "file format is selected during upload.")
                     return render(request, "progres_search/error.html", {"error_text": error_text})
                 if res_ranges is None:
                     error_text = ("Chainsaw did not find any domains in your uploaded protein "
