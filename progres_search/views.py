@@ -11,6 +11,7 @@ from torch_geometric.loader import DataLoader
 import importlib.metadata
 import os
 from random import choices
+import re
 import string
 from tempfile import NamedTemporaryFile
 
@@ -18,6 +19,7 @@ from .models import Submission
 from .forms import SubmitJobForm
 
 base_url = "progres.mrc-lmb.cam.ac.uk"
+example_url_str = "ABC123"
 device = "cpu"
 
 print("Loading Progres data, this will take a minute")
@@ -87,7 +89,7 @@ def read_ca_backbone(fp, fileformat="guess", res_ranges="all"):
         for res_range in res_ranges.split(","):
             domain_res = []
             for rr in res_range.split("_"):
-                res_start, res_end = rr.split("-")
+                res_start, res_end = re.sub(r"[^0-9-]", "", rr).split("-") # Remove ins code
                 domain_res.extend(range(int(res_start), int(res_end) + 1))
             domains_res.append(set(domain_res))
             n_domains = len(domains_res)
@@ -220,7 +222,8 @@ def index(request):
             return HttpResponseRedirect(reverse("progres_search:results", args=(url_str,)))
     else:
         form = SubmitJobForm()
-    return render(request, "progres_search/index.html", {"form": form})
+    context = {"form": form, "example_url_str": example_url_str}
+    return render(request, "progres_search/index.html", context)
 
 def get_target_url(hid, note, targetdb):
     if targetdb == "afted":
@@ -255,7 +258,7 @@ def get_res_range(hid, note, targetdb):
 def get_domain_size(res_range):
     n_res = 0
     for rr in res_range.split("_"):
-        res_start, res_end = rr.split("-")
+        res_start, res_end = re.sub(r"[^0-9-]", "", rr).split("-")
         n_res += int(res_end) - int(res_start) + 1
     return n_res
 
