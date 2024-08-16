@@ -11,7 +11,6 @@ from torch_geometric.loader import DataLoader
 import importlib.metadata
 import os
 from random import choices
-import re
 import string
 from tempfile import NamedTemporaryFile
 
@@ -258,8 +257,7 @@ def get_res_range(hid, note, targetdb):
 def get_domain_size(res_range):
     n_res = 0
     for rr in res_range.split("_"):
-        res_start, res_end = re.sub(r"[^0-9-]", "", rr).split("-")
-        n_res += int(res_end) - int(res_start) + 1
+        n_res += len(pg.extract_res_range(rr))
     return n_res
 
 def results(request, submission_url_str):
