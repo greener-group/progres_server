@@ -27,11 +27,13 @@ data_dir = os.path.join(os.path.dirname(__file__), "data")
 
 pg_model = pg.load_trained_model(device)
 target_data_dict = {}
-for targetdb in (pg.pre_embedded_dbs_faiss + pg.pre_embedded_dbs):
+for targetdb in pg.pre_embedded_dbs:
     fp = os.path.join(pg.database_dir, targetdb + ".pt")
     target_data_dict[targetdb] = torch.load(fp, map_location=device)
 target_index_dict = {}
 for targetdb in pg.pre_embedded_dbs_faiss:
+    fp = os.path.join(pg.database_dir, targetdb + "_noembs.pt")
+    target_data_dict[targetdb] = torch.load(fp, map_location=device)
     fp = os.path.join(pg.database_dir, f"{targetdb}.index")
     target_index_dict[targetdb] = faiss.read_index(fp)
 
@@ -237,6 +239,9 @@ def get_target_url(hid, note, targetdb):
     elif targetdb == "ecod70":
         pdbid = ecod_data[hid][1]
         return f"https://files.rcsb.org/download/{pdbid}.pdb"
+    elif targetdb == "pdb100":
+        pdbid = hid.split()[0]
+        return f"https://files.rcsb.org/download/{pdbid}.pdb"
     elif targetdb == "af21org":
         entry_id = hid.split("_")[1]
         return f"https://alphafold.ebi.ac.uk/files/AF-{entry_id}-F1-model_v4.pdb"
@@ -250,6 +255,8 @@ def get_res_range(hid, note, targetdb):
         return cath_data[hid]
     elif targetdb == "ecod70":
         return ecod_data[hid][0]
+    elif targetdb == "pdb100":
+        return hid.split()[1]
     elif targetdb == "af21org":
         cols = hid.split("_")
         return f"{cols[2]}-{cols[3]}:A"

@@ -24,7 +24,8 @@ class Submission(models.Model):
         help_text=("Choose a database to search against. afted is the "
                    "<a href='https://www.biorxiv.org/content/10.1101/2024.03.18.585509'>"
                    "TED domains</a> from the AlphaFold database. scope95/scope40/cath40/ecod70 "
-                   "are domains from classifications of the PDB. af21org is domains from the "
+                   "are domains from classifications of the PDB. pdb100 is the whole PDB split "
+                   "into domains with Chainsaw. af21org is domains from the "
                    "AlphaFold set of 21 model organisms. See "
                    "<a href='https://github.com/greener-group/progres#available-databases'>"
                    "here</a> for more info."),
