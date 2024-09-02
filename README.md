@@ -51,3 +51,5 @@ To delete the database when changing models:
 ```
 rm db.sqlite3 progres_search/migrations/*.py progres_search/migrations/__pycache__/*
 ```
+
+For deployment, see the Django documentation.
