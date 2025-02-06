@@ -289,7 +289,7 @@ def results(request, submission_url_str):
         submission.maxhits,
     ))
 
-    results_zips = []
+    results_zips, tsv_strings = [], []
     for result_dict in result_dicts:
         target_urls = [get_target_url(hid, note, targetdb) for hid, note in zip(
                                                 result_dict["domains"], result_dict["notes"])]
@@ -299,6 +299,14 @@ def results(request, submission_url_str):
                           result_dict["similarities"], result_dict["notes"],
                           target_urls, target_res_ranges)
         results_zips.append(results_zip)
+        tsv_string = "hit_n\\tdomain\\thit_nres\\tsimilarity\\tnotes\\turl\\ttarget_res_range\\n"
+        for hi, (domain, hit_nres, similarity, note, url, target_res_range) in enumerate(zip(
+                                            result_dict["domains"], result_dict["hits_nres"],
+                                            result_dict["similarities"], result_dict["notes"],
+                                            target_urls, target_res_ranges)):
+            tsv_string += "\\t".join([str(hi+1), domain, str(hit_nres), str(similarity), note,
+                                      url, target_res_range]) + "\\n"
+        tsv_strings.append(tsv_string)
 
     if submission.res_ranges == "all":
         query_res_ranges = [f"1-{submission.n_res_total}"]
@@ -321,6 +329,7 @@ def results(request, submission_url_str):
         "n_domains"      : len(domains_iter),
         "domains_iter"   : domains_iter,
         "domains_zip"    : domains_zip,
+        "tsv_strings"    : tsv_strings,
         "url_start"      : url_start,
         "res_range_start": res_range_start,
         "base_url"       : base_url,

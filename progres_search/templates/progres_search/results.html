@@ -47,6 +47,10 @@
         <a href="#">
             Go to top
         </a>
+        |
+        <a href="javascript:void(0);" onclick="download_tsv_file({{ domain_n }})">
+            Download table as TSV file
+        </a>
 
         <ul>
             <li>
@@ -150,6 +154,24 @@
                 console.error("Failed to load PDB " + url + ": " + err);
             },
         });
+    };
+
+    // See https://www.geeksforgeeks.org/how-to-export-html-table-to-csv-using-javascript
+    function download_tsv_file(domain_n) {
+        domain_results_tsv = [
+            {% for tsv_string in tsv_strings %}
+                "{{ tsv_string }}",
+            {% endfor %}
+        ];
+        tsv_file = new Blob([domain_results_tsv[domain_n-1]], { type: "text/tab-separated-values" });
+        let temp_link = document.createElement("a");
+        temp_link.download = "progres_result_dom_" + domain_n + ".tsv";
+        let url = window.URL.createObjectURL(tsv_file);
+        temp_link.href = url;
+        temp_link.style.display = "none";
+        document.body.appendChild(temp_link);
+        temp_link.click();
+        document.body.removeChild(temp_link);
     };
 
     $(document).ready( function () {

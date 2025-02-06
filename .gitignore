@@ -4,3 +4,5 @@ db.sqlite3
 .vscode
 secret_key.txt
 private_readme.md
+*.pdb
+*.cif
