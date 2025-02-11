@@ -50,7 +50,8 @@ class Submission(models.Model):
         default=100,
         validators=[MinValueValidator(1), MaxValueValidator(1000)],
         verbose_name="Max number of hits",
-        help_text="The maximum number of hits per domain to return. Must be 1 -> 1000.",
+        help_text=("The maximum number of hits per domain to return. Hits will only be returned "
+                   "if they are above the minimum score given above. Must be 1 -> 1000."),
     )
     fileformat = models.CharField(
         max_length=20,
