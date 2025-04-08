@@ -6,7 +6,7 @@ The code here will only be of use if you want to host your own version of the we
 
 If you use the Progres web server or software, please cite the paper:
 
-- Greener JG and Jamali K. Fast protein structure searching using structure graph embeddings. bioRxiv (2022) - [link](https://www.biorxiv.org/content/10.1101/2022.11.28.518224)
+- Greener JG and Jamali K. Fast protein structure searching using structure graph embeddings. Bioinformatics Advances 5:1, vbaf042 (2025) - [link](https://academic.oup.com/bioinformaticsadvances/article/5/1/vbaf042/8107707)
 
 ## Installation
 
