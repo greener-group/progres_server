@@ -229,7 +229,7 @@ def index(request):
 def get_target_url(hid, note, targetdb):
     if targetdb == "afted":
         afdb_id = note.split()[0]
-        return f"https://alphafold.ebi.ac.uk/files/{afdb_id}-model_v4.pdb"
+        return f"https://alphafold.ebi.ac.uk/files/{afdb_id}-model_v6.pdb"
     elif targetdb == "scope95" or targetdb == "scope40":
         pdbid = scope_data[hid][1]
         return f"https://files.rcsb.org/download/{pdbid}.pdb"
@@ -244,7 +244,7 @@ def get_target_url(hid, note, targetdb):
         return f"https://files.rcsb.org/download/{pdbid}.pdb"
     elif targetdb == "af21org":
         entry_id = hid.split("_")[1]
-        return f"https://alphafold.ebi.ac.uk/files/AF-{entry_id}-F1-model_v4.pdb"
+        return f"https://alphafold.ebi.ac.uk/files/AF-{entry_id}-F1-model_v6.pdb"
 
 def get_res_range(hid, note, targetdb):
     if targetdb == "afted":
