@@ -231,7 +231,8 @@ def get_target_url(hid, note, targetdb):
         afdb_id = note.split()[0]
         return f"https://alphafold.ebi.ac.uk/files/{afdb_id}-model_v6.pdb"
     elif targetdb == "bfvd":
-        return f"https://bfvd.steineggerlab.workers.dev/pdb/{hid}.pdb"
+        bfvd_id = hid.split("_D")[0]
+        return f"https://bfvd.steineggerlab.workers.dev/pdb/{bfvd_id}.pdb"
     elif targetdb == "scope95" or targetdb == "scope40":
         pdbid = scope_data[hid][1]
         return f"https://files.rcsb.org/download/{pdbid}.pdb"
