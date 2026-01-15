@@ -230,6 +230,8 @@ def get_target_url(hid, note, targetdb):
     if targetdb == "afted":
         afdb_id = note.split()[0]
         return f"https://alphafold.ebi.ac.uk/files/{afdb_id}-model_v6.pdb"
+    elif targetdb == "bfvd":
+        return f"https://bfvd.steineggerlab.workers.dev/pdb/{hid}.pdb"
     elif targetdb == "scope95" or targetdb == "scope40":
         pdbid = scope_data[hid][1]
         return f"https://files.rcsb.org/download/{pdbid}.pdb"
@@ -249,6 +251,8 @@ def get_target_url(hid, note, targetdb):
 def get_res_range(hid, note, targetdb):
     if targetdb == "afted":
         return note.split()[1] + ":A"
+    elif targetdb == "bfvd":
+        return note.split()[-1][1:-1] + ":A"
     elif targetdb == "scope95" or targetdb == "scope40":
         return scope_data[hid][0]
     elif targetdb == "cath40":

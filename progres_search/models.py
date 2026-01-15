@@ -22,8 +22,10 @@ class Submission(models.Model):
         default="afted",
         verbose_name="Target database",
         help_text=("Choose a database to search against. afted is the "
-                   "<a href='https://www.biorxiv.org/content/10.1101/2024.03.18.585509'>"
-                   "TED domains</a> from the AlphaFold database. scope95/scope40/cath40/ecod70 "
+                   "<a href='https://www.science.org/doi/10.1126/science.adq4946'>"
+                   "TED domains</a> from the <a href='https://alphafold.ebi.ac.uk'>AlphaFold "
+                   "database</a>. bfvd is domains from the <a href='https://bfvd.foldseek.com'>"
+                   "Big Fantastic Virus Database (BFVD)</a>. scope95/scope40/cath40/ecod70 "
                    "are domains from classifications of the PDB. pdb100 is the whole PDB split "
                    "into domains with Chainsaw. af21org is domains from the "
                    "AlphaFold set of 21 model organisms. See "
